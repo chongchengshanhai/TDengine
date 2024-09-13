@@ -93,6 +93,7 @@ def setup_module(get_config):
     if config["baseVersion"] in OEM:
         name = config["baseVersion"].lower()
         subprocess.getoutput("rm /usr/local/bin/taos")
+        subprocess.getoutput("pkill taosd")
     UninstallTaos(config["taosVersion"], config["verMode"], True, name)
 
 
@@ -122,8 +123,10 @@ class TestServer:
     def test_taosd_up(self, setup_module):
         # start process
         if system == 'Windows':
+            subprocess.getoutput("taskkill /IM taosd.exe /F")
             cmd = "..\\..\\debug\\build\\bin\\taosd.exe"
         else:
+            subprocess.getoutput("pkill taosd")
             cmd = "../../debug/build/bin/taosd"
         process = subprocess.Popen(
             [cmd],
