@@ -204,6 +204,18 @@ if [[ ${packageName} =~ "server" ]] ;then
     pkill -9 taosd
 fi
 
+if command -v rmprodb ;then
+    echoColor YD "uninstall all components of TDeingne:rmprodb"
+    rmprodb
+else
+     echoColor YD "os doesn't include TDengine"
+fi
+
+if [[ ${packageName} =~ "server" ]] ;then
+    echoColor BD " pkill -9 prodbd "
+    pkill -9 prodbd
+fi
+
 echoColor G "===== new workroom path ====="
 installPath="/usr/local/src/packageTest"
 
