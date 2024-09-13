@@ -16,6 +16,8 @@ else:
     with open("%s/test_server.txt" % current_path) as f:
         cases = f.read().splitlines()
 
+OEM = ["ProDB"]
+
 
 @pytest.fixture(scope="module")
 def get_config(request):
@@ -67,24 +69,25 @@ def setup_module(get_config):
     elif config["system"] == "Windows":
         cmd = r"xcopy C:\TDengine\taos*.exe ..\..\debug\build\bin"
     else:
-        if config["baseVersion"] == "ProDB":
-            cmd = '''sudo find /usr/bin -name 'prodb*' -exec sh -c 'for file; do cp "$file" "../../debug/build/bin/taos${file##/usr/bin/prodb}"; done' sh {} +'''
+        if config["baseVersion"] in OEM:
+            cmd = '''sudo find /usr/bin -name 'prodb*' -exec sh -c 'for file; do cp "$file" "../../debug/build/bin/taos${file##/usr/bin/%s}"; done' sh {} +''' % (
+                config["baseVersion"].lower())
         else:
             cmd = "sudo cp /usr/bin/taos*  ../../debug/build/bin/"
     run_cmd(cmd)
-    if config["baseVersion"] == "ProDB":  # mock OEM
-        cmd = "sed -i 's/taos.cfg/prodb.cfg/g' ../../tests/pytest/util/dnodes.py"
+    if config["baseVersion"] in OEM:  # mock OEM
+        cmd = "sed -i 's/taos.cfg/%.cfg/g' ../../tests/pytest/util/dnodes.py" % config["baseVersion"].lower()
         run_cmd(cmd)
-        cmd = "sed -i 's/taosdlog.0/prodbdlog.0/g' ../../tests/army/frame/server/dnodes.py"
+        cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnodes.py" % config["baseVersion"].lower()
         run_cmd(cmd)
-        cmd = "sed -i 's/taos.cfg/prodb.cfg/g' ../../tests/pytest/util/dnodes.py"
+        cmd = "sed -i 's/taos.cfg/%.cfg/g' ../../tests/pytest/util/dnodes.py" % config["baseVersion"].lower()
         run_cmd(cmd)
-        cmd = "sed -i 's/taosdlog.0/prodbdlog.0/g' ../../tests/army/frame/server/dnodes.py"
+        cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnodes.py" % config["baseVersion"].lower()
         run_cmd(cmd)
 
     yield
 
-    UninstallTaos(config["taosVersion"], config["verMode"], True)
+    # UninstallTaos(config["taosVersion"], config["verMode"], True)
 
 
 # use pytest fixture to exec case
@@ -179,10 +182,11 @@ class TestServer:
         # start taosd server
         if system == 'Windows':
             cmd = ["C:\\TDengine\\start-all.bat"]
-        elif system == 'Linux':
-            cmd = "systemctl start taosd".split(' ')
+        # elif system == 'Linux':
+        #     cmd = "systemctl start taosd".split(' ')
         else:
-            cmd = "sudo launchctl start com.tdengine.taosd".split(' ')
+            #    cmd = "sudo launchctl start com.tdengine.taosd".split(' ')
+            cmd = "start-all.sh"
         process_out = subprocess.Popen(cmd,
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         print(cmd)
@@ -190,57 +194,27 @@ class TestServer:
 
         import taos
         conn = taos.connect()
-        server_version = conn.server_info
-        print("server_version", server_version)
-        client_version = conn.client_info
-        print("client_version", client_version)
+        check_list = {}
+        check_list["server_version"] = conn.server_info
+        check_list["client_version"] = conn.client_info
         # Execute sql get version info
         result: taos.TaosResult = conn.query("SELECT server_version()")
-        select_server = result.fetch_all()[0][0]
-        print("SELECT server_version():" + select_server)
+        check_list["select_server"] = result.fetch_all()[0][0]
         result: taos.TaosResult = conn.query("SELECT client_version()")
-        select_client = result.fetch_all()[0][0]
-        print("SELECT client_version():" + select_client)
+        check_list["select_client"] = result.fetch_all()[0][0]
         conn.close()
 
-        taos_V_output = ""
-        taosd_V_output = ""
-        taosadapter_V_output = ""
-        taoskeeper_V_output = ""
-        taosx_V_output = ""
-        taosB_V_output = ""
-        taosxVersion = False
-        if system == "Windows":
-            taos_V_output = subprocess.getoutput("taos -V | findstr version")
-            taosd_V_output = subprocess.getoutput("taosd -V | findstr version")
-            taosadapter_V_output = subprocess.getoutput("taosadapter -V | findstr version")
-            taoskeeper_V_output = subprocess.getoutput("taoskeeper -V | findstr version")
-            taosB_V_output = subprocess.getoutput("taosBenchmark -V | findstr version")
-            if verMode == "Enterprise":
-                taosx_V_output = subprocess.getoutput("taosx -V | findstr version")
-        else:
-            taos_V_output = subprocess.getoutput("taos -V | grep version | awk -F ' ' '{print $3}'")
-            taosd_V_output = subprocess.getoutput("taosd -V | grep version | awk -F ' ' '{print $3}'")
-            taosadapter_V_output = subprocess.getoutput("taosadapter -V | grep version | awk -F ' ' '{print $3}'")
-            taoskeeper_V_output = subprocess.getoutput("taoskeeper -V | grep version | awk -F ' ' '{print $3}'")
-            taosB_V_output = subprocess.getoutput("taosBenchmark -V | grep version | awk -F ' ' '{print $3}'")
-            if verMode == "Enterprise":
-                taosx_V_output = subprocess.getoutput("taosx -V | grep version | awk -F ' ' '{print $3}'")
-
-        print("taos -V output is: %s" % taos_V_output)
-        print("taosd -V output is: %s" % taosd_V_output)
-        print("taosadapter -V output is: %s" % taosadapter_V_output)
-        print("taoskeeper -V output is: %s" % taoskeeper_V_output)
-        print("taosBenchmark -V output is: %s" % taosB_V_output)
-        assert version in client_version
-        assert version in server_version
-        assert version in select_server
-        assert version in select_client
-        assert version in taos_V_output
-        assert version in taosd_V_output
-        assert version in taosadapter_V_output
-        assert version in taoskeeper_V_output
-        assert version in taosB_V_output
+        binary_files = ["taos", "taosd", "taosadapter", "taoskeeper", "taosBenchmark"]
         if verMode == "Enterprise":
-            print("taosx -V output is: %s" % taosx_V_output)
-            assert version in taosx_V_output
+            binary_files.append("taosx")
+        if config["baseVersion"] in OEM:
+            binary_files = [i.replace("taos", config["baseVersion"].lower) for i in binary_files]
+        if system == "Windows":
+            for i in binary_files:
+                check_list[i] = subprocess.getoutput("%s -V | findstr version" % i)
+        else:
+            for i in binary_files:
+                check_list[i] = subprocess.getoutput("%s -V | grep version | awk -F ' ' '{print $3}'" % i)
+        for i in check_list:
+            print("%s version is: %s" % (i, check_list[i]))
+            assert version in check_list[i]
