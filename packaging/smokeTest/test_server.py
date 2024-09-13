@@ -85,13 +85,14 @@ def setup_module(get_config):
         cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnode.py" % config["baseVersion"].lower()
         run_cmd(cmd)
         cmd = "ln -s /usr/bin/prodb /usr/local/bin/taos"
-        run_cmd(cmd)
+        subprocess.getoutput(cmd)
 
     yield
 
     name = "taos"
     if config["baseVersion"] in OEM:
         name = config["baseVersion"].lower()
+        subprocess.getoutput("rm /usr/local/bin/taos")
     UninstallTaos(config["taosVersion"], config["verMode"], True, name)
 
 
