@@ -24,7 +24,7 @@ if "%verMode%"=="enterprise" (
 ) else (
 	set fileType=%sType%
 )
-if "%baseVersion%"=="OEM" (
+if "%baseVersion%"=="ProDB" (
     echo %fileType%
     set installer=ProDB-%fileType%-%version%-Windows-x64.exe
     echo %installer%

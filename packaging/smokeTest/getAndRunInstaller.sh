@@ -82,7 +82,7 @@ YELLOW_DARK='\033[0;33m'
 BLUE_DARK='\033[0;34m'
 GREEN_UNDERLINE='\033[4;32m'
 NC='\033[0m'
-if [ "${originversion}" = "OEM" ]; then
+if [ "${originversion}" = "ProDB" ]; then
     TDengine="ProDB"
 else
     TDengine="TDengine"
@@ -153,7 +153,7 @@ wgetFile() {
     versionPath=$2
     sourceP=$3
     nasServerIP="192.168.1.213"
-    if [ "${originversion}" = "OEM" ]; then
+    if [ "${originversion}" = "ProDB" ]; then
         packagePath="/nas/OEM/ProDB/v${versionPath}"
     else
         packagePath="/nas/TDengine/${originversion}/v${versionPath}/${verMode}"

@@ -212,7 +212,7 @@ class TDDnode:
         self.logDir = os.path.join(self.path,"sim","dnode%d" % self.index, "log")
         self.dataDir = os.path.join(self.path,"sim","dnode%d" % self.index, "data")
         self.cfgDir = os.path.join(self.path,"sim","dnode%d" % self.index, "cfg")
-        self.cfgPath = os.path.join(self.path,"sim","dnode%d" % self.index, "cfg","taos.cfg")
+        self.cfgPath = os.path.join(self.path,"sim","dnode%d" % self.index, "cfg","prodb.cfg")
 
         cmd = "rm -rf " + self.dataDir
         if os.system(cmd) != 0:
@@ -439,7 +439,7 @@ class TDDnode:
                 time.sleep(0.1)
                 key = 'from offline to online'
                 bkey = bytes(key, encoding="utf8")
-                logFile = self.logDir + "/taosdlog.0"
+                logFile = self.logDir + "/prodbdlog.0"
                 i = 0
                 while not os.path.exists(logFile):
                     sleep(0.1)

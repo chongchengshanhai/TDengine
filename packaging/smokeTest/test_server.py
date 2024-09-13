@@ -7,7 +7,6 @@ import re
 import time
 import signal
 
-
 system = platform.system()
 current_path = os.path.abspath(os.path.dirname(__file__))
 if system == 'Windows':
@@ -68,8 +67,20 @@ def setup_module(get_config):
     elif config["system"] == "Windows":
         cmd = r"xcopy C:\TDengine\taos*.exe ..\..\debug\build\bin"
     else:
-        cmd = "sudo cp /usr/bin/taos*  ../../debug/build/bin/"
+        if config["baseVersion"] == "ProDB":
+            cmd = '''sudo find /usr/bin -name 'prodb*' -exec sh -c 'for file; do cp "$file" "../../debug/build/bin/taos${file##/usr/bin/prodb}"; done' sh {} +'''
+        else:
+            cmd = "sudo cp /usr/bin/taos*  ../../debug/build/bin/"
     run_cmd(cmd)
+    if config["baseVersion"] == "ProDB":  # mock OEM
+        cmd = "sed -i 's/taos.cfg/prodb.cfg/g' ../../tests/pytest/util/dnodes.py"
+        run_cmd(cmd)
+        cmd = "sed -i 's/taosdlog.0/prodbdlog.0/g' ../../tests/army/frame/server/dnodes.py"
+        run_cmd(cmd)
+        cmd = "sed -i 's/taos.cfg/prodb.cfg/g' ../../tests/pytest/util/dnodes.py"
+        run_cmd(cmd)
+        cmd = "sed -i 's/taosdlog.0/prodbdlog.0/g' ../../tests/army/frame/server/dnodes.py"
+        run_cmd(cmd)
 
     yield
 
@@ -117,11 +128,12 @@ class TestServer:
             if not line:
                 break
             print(line.strip())
-            if "succeed to write dnode" in line:
+            if "from offline to online" in line:
                 time.sleep(20)
                 # 发送终止信号
                 os.kill(process.pid, signal.SIGTERM)
                 break
+
     @pytest.mark.all
     def test_execute_cases(self, setup_module, run_command):
         # assert the result
