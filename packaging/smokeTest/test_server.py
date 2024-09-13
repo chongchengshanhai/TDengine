@@ -136,8 +136,8 @@ class TestServer:
             line = process.stdout.readline()
             if line:
                 print(line.strip())
-            if "from offline to online" in line:
-                time.sleep(10)
+            if "succeed to write dnode" in line:
+                time.sleep(15)
                 # 发送终止信号
                 os.kill(process.pid, signal.SIGTERM)
                 break
