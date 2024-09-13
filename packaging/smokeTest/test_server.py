@@ -76,18 +76,22 @@ def setup_module(get_config):
             cmd = "sudo cp /usr/bin/taos*  ../../debug/build/bin/"
     run_cmd(cmd)
     if config["baseVersion"] in OEM:  # mock OEM
-        cmd = "sed -i 's/taos.cfg/%.cfg/g' ../../tests/pytest/util/dnodes.py" % config["baseVersion"].lower()
+        cmd = "sed -i 's/taos.cfg/%s.cfg/g' ../../tests/pytest/util/dnodes.py" % config["baseVersion"].lower()
         run_cmd(cmd)
-        cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnodes.py" % config["baseVersion"].lower()
+        cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/pytest/util/dnodes.py" % config["baseVersion"].lower()
         run_cmd(cmd)
-        cmd = "sed -i 's/taos.cfg/%.cfg/g' ../../tests/pytest/util/dnodes.py" % config["baseVersion"].lower()
+        cmd = "sed -i 's/taos.cfg/%s.cfg/g' ../../tests/army/frame/server/dnode.py" % config["baseVersion"].lower()
         run_cmd(cmd)
-        cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnodes.py" % config["baseVersion"].lower()
+        cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnode.py" % config["baseVersion"].lower()
         run_cmd(cmd)
 
     yield
 
-    # UninstallTaos(config["taosVersion"], config["verMode"], True)
+    name = "taos"
+    if config["baseVersion"] in OEM:
+        name = config["baseVersion"].lower()
+    UninstallTaos(config["taosVersion"], config["verMode"], True, name)
+
 
 
 # use pytest fixture to exec case
@@ -128,11 +132,10 @@ class TestServer:
         # monitor output
         while True:
             line = process.stdout.readline()
-            if not line:
-                break
-            print(line.strip())
+            if line:
+                print(line.strip())
             if "from offline to online" in line:
-                time.sleep(20)
+                time.sleep(10)
                 # 发送终止信号
                 os.kill(process.pid, signal.SIGTERM)
                 break
@@ -205,10 +208,10 @@ class TestServer:
         conn.close()
 
         binary_files = ["taos", "taosd", "taosadapter", "taoskeeper", "taosBenchmark"]
-        if verMode == "Enterprise":
+        if verMode.lower() == "enterprise":
             binary_files.append("taosx")
         if config["baseVersion"] in OEM:
-            binary_files = [i.replace("taos", config["baseVersion"].lower) for i in binary_files]
+            binary_files = [i.replace("taos", config["baseVersion"].lower()) for i in binary_files]
         if system == "Windows":
             for i in binary_files:
                 check_list[i] = subprocess.getoutput("%s -V | findstr version" % i)
