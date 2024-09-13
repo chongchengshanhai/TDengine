@@ -84,6 +84,8 @@ def setup_module(get_config):
         run_cmd(cmd)
         cmd = "sed -i 's/taosdlog.0/%sdlog.0/g' ../../tests/army/frame/server/dnode.py" % config["baseVersion"].lower()
         run_cmd(cmd)
+        cmd = "ln -s /usr/bin/prodb /usr/local/bin/taos"
+        run_cmd(cmd)
 
     yield
 
@@ -91,7 +93,6 @@ def setup_module(get_config):
     if config["baseVersion"] in OEM:
         name = config["baseVersion"].lower()
     UninstallTaos(config["taosVersion"], config["verMode"], True, name)
-
 
 
 # use pytest fixture to exec case
