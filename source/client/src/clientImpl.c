@@ -1586,6 +1586,8 @@ int32_t taosConnectImpl(const char* user, const char* auth, const char* db, __ta
   pRequest->sqlstr = taosStrdup("taos_connect");
   if (pRequest->sqlstr) {
     pRequest->sqlLen = strlen(pRequest->sqlstr);
+  } else {
+    return terrno;
   }
 
   SMsgSendInfo* body = NULL;
@@ -2397,6 +2399,9 @@ char* getDbOfConnection(STscObj* pObj) {
   size_t len = strlen(pObj->db);
   if (len > 0) {
     p = strndup(pObj->db, tListLen(pObj->db));
+    if (p == NULL) {
+      tscError("failed to strndup db name");
+    }
   }
 
   (void)taosThreadMutexUnlock(&pObj->mutex);
